@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="description" content="CallDesk - Fast phone call list manager">
+  <title>CallDesk</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --bg: #0f0f1a;
+      --card: #1a1a2e;
+      --card2: #252545;
+      --text: #e0e0e0;
+      --text2: #a0a0b0;
+      --accent: #4e4e7a;
+      --accent2: #63639a;
+      --green: #2ecc71;
+      --red: #e74c3c;
+      --yellow: #f1c40f;
+      --blue: #3498db;
+      --orange: #e67e22;
+      --border: #2a2a4a;
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
+    }
+    * { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-top: var(--safe-top);
+      padding-bottom: calc(var(--safe-bottom) + 60px);
+    }
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: calc(var(--safe-top) + 12px) 16px 12px;
+    }
+    h1 { font-size: 20px; font-weight: 600; text-align: center; letter-spacing: 1px; }
+    .tabs {
+      display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; padding-bottom: 8px;
+    }
+    .tab {
+      flex: 0 0 auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    .search-box {
+      position: sticky; top: 70px; z-index: 99;
+      background: var(--bg);
+      padding: 10px 16px;
+    }
+    .search-box input {
+      width: 100%; padding: 12px 14px; border-radius: 12px;
+      border: 1px solid var(--border); background: var(--card);
+      color: var(--text); font-size: 14px; outline: none;
+    }
+    main { padding: 12px 16px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      transition: all 0.2s;
+    }
+    .card.highlight {
+      border-color: var(--green);
+      box-shadow: 0 0 15px rgba(46, 204, 113, 0.3);
+    }
+    .card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px;
+    }
+    .slno { font-size: 12px; color: var(--text2); font-weight: 600; }
+    .status-badge {
+      font-size: 11px; padding: 4px 10px; border-radius: 10px;
+      background: var(--card2); color: var(--text2);
+    }
+    .status-badge.pending { background: var(--card2); }
+    .status-badge.done { background: var(--green); color: #000; }
+    .status-badge.remark { background: var(--yellow); color: #000; }
+    .card-name { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+    .card-place { font-size: 13px; color: var(--text2); margin-bottom: 10px; }
+    .card-meta {
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    }
+    .badge {
+      font-size: 11px; padding: 4px 10px; border-radius: 8px;
+      background: var(--card2); color: var(--text2);
+    }
+    .badge.dress { background: var(--accent); }
+    .badge.emoji { font-size: 16px; padding: 4px 8px; }
+    .card-actions {
+      display: flex; gap: 8px; margin-top: 12px;
+    }
+    .btn {
+      flex: 1; padding: 14px; border: none; border-radius: 12px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; touch-action: manipulation;
+    }
+    .btn-call { background: var(--green); color: #000; }
+    .btn-call:active { transform: scale(0.98); }
+    .btn-done { background: var(--green); color: #000; flex: 0 0 48px; }
+    .btn-noanswer { background: var(--yellow); color: #000; }
+    .btn-busy { background: var(--red); color: #fff; }
+    .btn-callback { background: var(--blue); color: #fff; }
+    .btn-switched { background: var(--orange); color: #fff; }
+    .btn-remark { background: var(--card2); color: var(--text); }
+    .btn-remark:active { background: var(--accent); }
+    .remark-field {
+      width: 100%; margin-top: 10px; padding: 10px 12px;
+      border-radius: 10px; border: 1px solid var(--border);
+      background: var(--card2); color: var(--text);
+      font-size: 13px; resize: none; min-height: 40px; outline: none;
+    }
+    .card-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+    }
+    .tick-toggle {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--text2); cursor: pointer;
+    }
+    .tick-toggle input { display: none; }
+    .tick-box {
+      width: 20px; height: 20px; border: 2px solid var(--accent);
+      border-radius: 6px; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .tick-toggle input:checked + .tick-box {
+      background: var(--green); border-color: var(--green);
+    }
+    .tick-box::after {
+      content: '✓'; color: #000; font-size: 14px; font-weight: bold;
+      opacity: 0; transform: scale(0); transition: all 0.2s;
+    }
+    .tick-toggle input:checked + .tick-box::after { opacity: 1; transform: scale(1); }
+    .last-called { font-size: 11px; color: var(--text2); }
+    .input-section {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--card); border-top: 1px solid var(--border);
+      padding: 12px 16px calc(var(--safe-bottom) + 12px);
+    }
+    .input-section textarea {
+      width: 100%; height: 120px; padding: 12px; border-radius: 12px;
+      border: 1px solid var(--border); background: var(--bg);
+      color: var(--text); font-size: 13px; resize: none; outline: none;
+    }
+    .input-actions {
+      display: flex; gap: 10px; margin-top: 10px;
+    }
+    .btn-add { background: var(--accent); color: #fff; flex: 1; }
+    .btn-add:active { background: var(--accent2); }
+    .btn-secondary {
+      background: var(--card2); color: var(--text); padding: 12px 16px;
+      border-radius: 12px; font-size: 13px; font-weight: 600;
+    }
+    .btn-secondary:active { background: var(--accent); }
+    .empty-state {
+      text-align: center; padding: 60px 20px; color: var(--text2);
+    }
+    .empty-state p { font-size: 14px; margin-bottom: 8px; }
+    .empty-state small { font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📞 CallDesk</h1>
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-tab="pending">Pending <span id="count-pending">0</span></div>
+      <div class="tab" data-tab="remarks">Remarks <span id="count-remarks">0</span></div>
+      <div class="tab" data-tab="done">Done <span id="count-done">0</span></div>
+      <div class="tab" data-tab="all">All <span id="count-all">0</span></div>
+    </div>
+  </header>
+  <div class="search-box">
+    <input type="text" id="search" placeholder="Search name, number, place...">
+  </div>
+  <main id="list"></main>
+  <div class="input-section">
+    <textarea id="input" placeholder="Paste list here...&#10;Format: slno name number place dresssize emoji"></textarea>
+    <div class="input-actions">
+      <button class="btn btn-add" id="btn-add">Add</button>
+      <button class="btn btn-secondary" id="btn-copy">Copy</button>
+      <button class="btn btn-secondary" id="btn-reset">Reset</button>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'calldesk_data';
+    const STATE_KEY = 'calldesk_state';
+    
+    let entries = [];
+    let currentTab = 'pending';
+    let searchQuery = '';
+    let highlightedId = null;
+
+    function load() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try { entries = JSON.parse(saved); } catch(e) { entries = []; }
+      }
+      const savedState = localStorage.getItem(STATE_KEY);
+      if (savedState) {
+        try { const s = JSON.parse(savedState); currentTab = s.currentTab || 'pending'; }
+        catch(e) {}
+      }
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      localStorage.setItem(STATE_KEY, JSON.stringify({ currentTab }));
+    }
+
+    function parseLine(line) {
+      const trimmed = line.trim();
+      if (!trimmed) return null;
+      
+      const match = trimmed.match(/^(\d+)\s+(.+?)\s+(\+?\d[\d\s-]*?)\s+(.+?)\s+(\S+)\s+(\S+)$/);
+      if (match) {
+        const slno = match[1];
+        const name = match[2].trim();
+        const numberRaw = match[3].trim();
+        const place = match[4].trim();
+        const dresssize = match[5].trim();
+        const emoji = match[6].trim();
+        const number = numberRaw.replace(/[^\d+]/g, '');
+        return { id: crypto.randomUUID(), slno, name, number, place, dresssize, emoji, status: 'pending', remark: '', lastCalled: null, checked: false };
+      }
+      
+      return { id: crypto.randomUUID(), slno: '', name: trimmed, number: '', place: '', dresssize: '', emoji: '', status: 'pending', remark: '', lastCalled: null, checked: false };
+    }
+
+    function parseInput(text) {
+      return text.split('\n').map(parseLine).filter(Boolean);
+    }
+
+    function addEntries(newEntries) {
+      const existingNumbers = new Set(entries.map(e => e.number));
+      const added = [];
+      for (const entry of newEntries) {
+        if (entry.number && existingNumbers.has(entry.number)) continue;
+        entries.push(entry);
+        if (entry.number) existingNumbers.add(entry.number);
+        added.push(entry);
+      }
+      save();
+      render();
+      return added.length;
+    }
+
+    function updateEntry(id, updates) {
+      const idx = entries.findIndex(e => e.id === id);
+      if (idx !== -1) {
+        entries[idx] = { ...entries[idx], ...updates, lastCalled: updates.status === 'done' ? Date.now() : (entries[idx].lastCalled || null) };
+        save();
+        render();
+      }
+    }
+
+    function deleteEntry(id) {
+      entries = entries.filter(e => e.id !== id);
+      save();
+      render();
+    }
+
+    function getFilteredEntries() {
+      let filtered = entries;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter(e => 
+          e.name.toLowerCase().includes(q) || 
+          e.number.includes(q) || 
+          e.place.toLowerCase().includes(q)
+        );
+      }
+      if (currentTab === 'pending') {
+        filtered = filtered.filter(e => e.status === 'pending');
+        filtered.sort((a, b) => (a.slno || 0) - (b.slno || 0));
+      } else if (currentTab === 'done') {
+        filtered = filtered.filter(e => e.status === 'done');
+      } else if (currentTab === 'remarks') {
+        filtered = filtered.filter(e => e.status === 'remark');
+      }
+      return filtered;
+    }
+
+    function render() {
+      const list = document.getElementById('list');
+      const filtered = getFilteredEntries();
+      
+      document.getElementById('count-pending').textContent = entries.filter(e => e.status === 'pending').length;
+      document.getElementById('count-done').textContent = entries.filter(e => e.status === 'done').length;
+      document.getElementById('count-remarks').textContent = entries.filter(e => e.status === 'remark').length;
+      document.getElementById('count-all').textContent = entries.length;
+
+      list.innerHTML = '';
+      
+      if (filtered.length === 0) {
+        list.innerHTML = `<div class="empty-state"><p>No entries found</p><small>Enter data in the input below</small></div>`;
+        return;
+      }
+
+      for (const entry of filtered) {
+        const card = document.createElement('div');
+        card.className = `card ${highlightedId === entry.id ? 'highlight' : ''}`;
+        
+        const statusBadge = entry.status === 'done' ? 'Done' : (entry.status === 'remark' ? 'Remark' : 'Pending');
+        const statusClass = entry.status;
+        
+        let actionsHtml = `<div class="card-actions">
+          <a href="tel:${entry.number}" class="btn btn-call">📞 Call</a>`;
+        
+        if (entry.status === 'pending' && highlightedId === entry.id) {
+          actionsHtml += `
+            <button class="btn btn-done" onclick="updateEntry('${entry.id}', {status: 'done'})">✓</button>
+            <button class="btn btn-noanswer" onclick="updateEntry('${entry.id}', {status: 'remark', remark: 'No answer'})">No answer</button>
+            <button class="btn btn-busy" onclick="updateEntry('${entry.id}', {status: 'remark', remark: 'Busy'})">Busy</button>
+            <button class="btn btn-callback" onclick="updateEntry('${entry.id}', {status: 'remark', remark: 'Call back'})">Callback</button>
+            <button class="btn btn-switched" onclick="updateEntry('${entry.id}', {status: 'remark', remark: 'Switched off'})">Switched</button>
+          </div>`;
+        } else {
+          actionsHtml += `<button class="btn btn-remark" onclick="document.getElementById('remark-${entry.id}').style.display = 'block'; this.style.display = 'none'">Remark</button>`;
+        }
+        
+        actionsHtml += `</div>`;
+        
+        const remarkField = entry.remark ? 
+          `<textarea class="remark-field" id="remark-${entry.id}" placeholder="Add remark..." oninput="updateEntry('${entry.id}', {remark: this.value})">${entry.remark}</textarea>` : 
+          `<textarea class="remark-field" id="remark-${entry.id}" placeholder="Add remark..." oninput="updateEntry('${entry.id}', {remark: this.value})" style="display:none"></textarea>`;
+        
+        const tickChecked = entry.checked ? 'checked' : '';
+        const lastCalledText = entry.lastCalled ? `Last called: ${new Date(entry.lastCalled).toLocaleString()}` : '';
+        
+        card.innerHTML = `
+          <div class="card-header">
+            <span class="slno">${entry.slno ? '#' + entry.slno : ''}</span>
+            <span class="status-badge ${statusClass}">${statusBadge}</span>
+          </div>
+          <div class="card-name">${entry.name}</div>
+          <div class="card-place">${entry.place}</div>
+          <div class="card-meta">
+            ${entry.dresssize ? `<span class="badge dress">Dress: ${entry.dresssize}</span>` : ''}
+            <span class="badge emoji">${entry.emoji}</span>
+          </div>
+          ${actionsHtml}
+          ${remarkField}
+          <div class="card-footer">
+            <label class="tick-toggle">
+              <input type="checkbox" ${tickChecked} onchange="updateEntry('${entry.id}', {checked: this.checked})">
+              <div class="tick-box"></div>
+            </label>
+            <span class="last-called">${lastCalledText}</span>
+          </div>
+        `;
+        
+        list.appendChild(card);
+      }
+    }
+
+    document.getElementById('btn-add').addEventListener('click', () => {
+      const input = document.getElementById('input');
+      const added = addEntries(parseInput(input.value));
+      input.value = '';
+      alert(`Added ${added} entry${added !== 1 ? 's' : ''}`);
+    });
+
+    document.getElementById('btn-copy').addEventListener('click', () => {
+      const lines = entries.map(e => 
+        `${e.slno || ''} ${e.name} ${e.number} ${e.place} ${e.dresssize} ${e.emoji} [${e.status}${e.remark ? ': ' + e.remark : ''}${e.checked ? ' ✓' : ''}]`
+      ).join('\n');
+      navigator.clipboard.writeText(lines).then(() => alert('Copied to clipboard'));
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      if (confirm('Reset all entries?')) {
+        entries = [];
+        save();
+        render();
+      }
+    });
+
+    document.getElementById('search').addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      render();
+    });
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentTab = tab.dataset.tab;
+        save();
+        render();
+      });
+    });
+
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && highlightedId) {
+        const card = document.querySelector(`.card[data-id="${highlightedId}"]`);
+        if (card) {
+          card.classList.add('highlight');
+        }
+      }
+    });
+
+    load();
+    render();
+    
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+</body>
+</html>
